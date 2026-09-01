@@ -125,49 +125,67 @@ export default async function handler(req: Request, res: Response) {
     const isAdmin = (permissions & 8n) === 8n || (permissions & 0x8n) === 0x8n;
 
     // ----------------------------------------------------
+    // Command: /ping (Health & Latency Check)
+    // ----------------------------------------------------
+    if (commandName === 'ping') {
+      const latency = Math.max(5, Math.round(Date.now() - (timestamp ? parseInt(timestamp, 10) * 1000 : Date.now())));
+      return res.status(200).json({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          embeds: [
+            {
+              title: '🏓 Pong! Server Architect Aktif',
+              description: `🟢 **Status Bot**: Online (Vercel Serverless)\n⚡ **Estimasi Latensi**: \`~${latency}ms\`\n🧠 **AI Engine**: Google Gemini 3.7 Flash\n🏛️ **Komunitas**: The Boomers`,
+              color: 0x57f287, // Discord Green
+              footer: {
+                text: 'Server Architect • Powered by Google Gemini',
+              },
+              timestamp: new Date().toISOString(),
+            },
+          ],
+        },
+      });
+    }
+
+    // ----------------------------------------------------
     // Command: /ask <prompt> (Gemini AI Assistant)
     // ----------------------------------------------------
     if (commandName === 'ask') {
       const promptOption = interaction.data.options?.find((opt: any) => opt.name === 'prompt');
       const prompt = promptOption?.value || 'Halo!';
 
-      // Respond immediately with Deferred Reply (Type 5) to prevent 3s timeout
-      res.status(200).json({
-        type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
-      });
+      try {
+        const geminiApiKey = process.env.GEMINI_API_KEY;
+        let aiText = '';
 
-      // Background task: call Gemini AI and update response
-      (async () => {
-        try {
-          const geminiApiKey = process.env.GEMINI_API_KEY;
-          let aiText = '';
+        if (!geminiApiKey) {
+          aiText = '⚠️ **Konfigurasi Kurang**: `GEMINI_API_KEY` belum disetting di environment variable Vercel.';
+        } else {
+          const ai = new GoogleGenAI({
+            apiKey: geminiApiKey,
+            httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+          });
 
-          if (!geminiApiKey) {
-            aiText = '⚠️ **Konfigurasi Kurang**: `GEMINI_API_KEY` belum disetting di environment variable.';
-          } else {
-            const ai = new GoogleGenAI({
-              apiKey: geminiApiKey,
-              httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
-            });
-
-            const response = await ai.models.generateContent({
-              model: 'gemini-3.7-flash',
-              contents: prompt,
-              config: {
-                systemInstruction: `Kamu adalah "Server Architect", asisten AI resmi berteknologi Google Gemini untuk komunitas Discord "The Boomers".
+          const response = await ai.models.generateContent({
+            model: 'gemini-3.7-flash',
+            contents: prompt,
+            config: {
+              systemInstruction: `Kamu adalah "Server Architect", asisten AI resmi berteknologi Google Gemini untuk komunitas Discord "The Boomers".
 Karakter: Cerdas, ramah, solutif, gaul tapi sopan, fasih berbahasa Indonesia dan Inggris.
 Tugas: Menjawab pertanyaan member ${user?.username || 'Member'}, memberikan tips gaming/coding/server setup, dan menghidupkan komunitas.
 Format output: Gunakan markdown Discord yang bersih (**bold**, *italic*, \`code\`, bullet point). Batasi panjang di bawah 1900 karakter.`,
-              },
-            });
-            aiText = response.text || 'Maaf, tidak dapat menghasilkan jawaban.';
-          }
+            },
+          });
+          aiText = response.text || 'Maaf, tidak dapat menghasilkan jawaban.';
+        }
 
-          if (aiText.length > 1950) {
-            aiText = aiText.substring(0, 1940) + '\n\n*(...dipotong karena limit 2000 karakter)*';
-          }
+        if (aiText.length > 1950) {
+          aiText = aiText.substring(0, 1940) + '\n\n*(...dipotong karena limit 2000 karakter)*';
+        }
 
-          await editOriginalInteractionResponse(appId, interactionToken, {
+        return res.status(200).json({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
             embeds: [
               {
                 title: `🧠 Gemini AI: "${prompt.length > 50 ? prompt.substring(0, 47) + '...' : prompt}"`,
@@ -185,16 +203,17 @@ Format output: Gunakan markdown Discord yang bersih (**bold**, *italic*, \`code\
                 timestamp: new Date().toISOString(),
               },
             ],
-          });
-        } catch (err: any) {
-          console.error('Error handling /ask command:', err);
-          await editOriginalInteractionResponse(appId, interactionToken, {
+          },
+        });
+      } catch (err: any) {
+        console.error('Error handling /ask command:', err);
+        return res.status(200).json({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
             content: `❌ Gagal menghubungi Gemini AI: ${err?.message || 'Unknown error'}`,
-          });
-        }
-      })();
-
-      return;
+          },
+        });
+      }
     }
 
     // ----------------------------------------------------
@@ -396,19 +415,18 @@ Format output: Gunakan markdown Discord yang bersih (**bold**, *italic*, \`code\
     // Command: /server-status
     // ----------------------------------------------------
     if (commandName === 'server-status') {
-      res.status(200).json({
-        type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
-      });
-
-      (async () => {
-        try {
+      try {
+        let guildData: any = null;
+        if (botToken && guildId) {
           const guildRes = await fetch(`${DISCORD_API_BASE}/guilds/${guildId}?with_counts=true`, {
             headers: { Authorization: `Bot ${botToken}` },
           });
+          if (guildRes.ok) guildData = await guildRes.json();
+        }
 
-          const guildData = guildRes.ok ? await guildRes.json() : null;
-
-          await editOriginalInteractionResponse(appId, interactionToken, {
+        return res.status(200).json({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
             embeds: [
               {
                 title: `📊 Status Server: ${guildData?.name || 'The Boomers'}`,
@@ -443,15 +461,16 @@ Format output: Gunakan markdown Discord yang bersih (**bold**, *italic*, \`code\
                 timestamp: new Date().toISOString(),
               },
             ],
-          });
-        } catch (err: any) {
-          await editOriginalInteractionResponse(appId, interactionToken, {
+          },
+        });
+      } catch (err: any) {
+        return res.status(200).json({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
             content: `❌ Gagal mengambil status server: ${err?.message}`,
-          });
-        }
-      })();
-
-      return;
+          },
+        });
+      }
     }
 
     // ----------------------------------------------------

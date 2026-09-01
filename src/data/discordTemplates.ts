@@ -189,6 +189,10 @@ export const BOT_GUIDES: BotGuideItem[] = [
 
 export const SLASH_COMMANDS: SlashCommandDefinition[] = [
   {
+    name: 'ping',
+    description: '🏓 Cek latensi dan status Server Architect bot.',
+  },
+  {
     name: 'setup-server',
     description: '⚡ [Admin] Buat otomatis struktur kategori & channel server The Boomers.',
     default_member_permissions: '8', // ADMINISTRATOR
