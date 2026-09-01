@@ -125,9 +125,9 @@ export default async function handler(req: Request, res: Response) {
     const isAdmin = (permissions & 8n) === 8n || (permissions & 0x8n) === 0x8n;
 
     // ----------------------------------------------------
-    // Command: /ping (Health & Latency Check)
+    // Command: /tb-ping or /ping (Health & Latency Check)
     // ----------------------------------------------------
-    if (commandName === 'ping') {
+    if (commandName === 'tb-ping' || commandName === 'ping') {
       const latency = Math.max(5, Math.round(Date.now() - (timestamp ? parseInt(timestamp, 10) * 1000 : Date.now())));
       return res.status(200).json({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
@@ -135,10 +135,10 @@ export default async function handler(req: Request, res: Response) {
           embeds: [
             {
               title: '🏓 Pong! Server Architect Aktif',
-              description: `🟢 **Status Bot**: Online (Vercel Serverless)\n⚡ **Estimasi Latensi**: \`~${latency}ms\`\n🧠 **AI Engine**: Google Gemini 3.7 Flash\n🏛️ **Komunitas**: The Boomers`,
+              description: `🟢 **Status Bot**: Online (Vercel Serverless)\n⚡ **Estimasi Latensi**: \`~${latency}ms\`\n🧠 **AI Engine**: Google Gemini 3.7 Flash\n👑 **Creator / Mastermind**: **Mang Pio 😎**\n🏛️ **Komunitas**: The Boomers`,
               color: 0x57f287, // Discord Green
               footer: {
-                text: 'Server Architect • Powered by Google Gemini',
+                text: 'Server Architect • Built by Mang Pio 😎 • Powered by Google Gemini',
               },
               timestamp: new Date().toISOString(),
             },
@@ -148,9 +148,9 @@ export default async function handler(req: Request, res: Response) {
     }
 
     // ----------------------------------------------------
-    // Command: /ask <prompt> (Gemini AI Assistant)
+    // Command: /tb-ask or /ask <prompt> (Gemini AI Assistant)
     // ----------------------------------------------------
-    if (commandName === 'ask') {
+    if (commandName === 'tb-ask' || commandName === 'ask') {
       const promptOption = interaction.data.options?.find((opt: any) => opt.name === 'prompt');
       const prompt = promptOption?.value || 'Halo!';
 
@@ -170,10 +170,13 @@ export default async function handler(req: Request, res: Response) {
             model: 'gemini-3.7-flash',
             contents: prompt,
             config: {
-              systemInstruction: `Kamu adalah "Server Architect", asisten AI resmi berteknologi Google Gemini untuk komunitas Discord "The Boomers".
-Karakter: Cerdas, ramah, solutif, gaul tapi sopan, fasih berbahasa Indonesia dan Inggris.
-Tugas: Menjawab pertanyaan member ${user?.username || 'Member'}, memberikan tips gaming/coding/server setup, dan menghidupkan komunitas.
-Format output: Gunakan markdown Discord yang bersih (**bold**, *italic*, \`code\`, bullet point). Batasi panjang di bawah 1900 karakter.`,
+              systemInstruction: `Kamu adalah "Server Architect", asisten AI resmi berteknologi Google Gemini 3.7 Flash untuk komunitas Discord "The Boomers".
+IDENTITAS PENTING & PENCIPTA:
+- Kamu dibuat, dirancang, dan dikembangkan secara khusus oleh **Mang Pio 😎** (Sang Founder & Mastermind server Discord The Boomers).
+- Jika ada yang bertanya "siapa yang buat kamu?", "siapa penciptamu?", "siapa developermu?", "lu siapa yang buat?", atau sejenisnya, kamu WAJIB menjawab dengan bangga, santai, dan penuh respek bahwa pencipta dan developermu adalah **Mang Pio 😎**!
+- Karakter: Cerdas, ramah, solutif, gaul tapi sopan, responsif, fasih berbahasa Indonesia dan Inggris.
+- Tugas: Membantu member (${user?.global_name || user?.username || 'Member'}), memberikan ide gaming/coding/server setup, dan meramaikan komunitas The Boomers.
+- Format: Gunakan markdown Discord yang bersih (**bold**, *italic*, \`code\`, bullet point). Batasi panjang jawaban di bawah 1900 karakter.`,
             },
           });
           aiText = response.text || 'Maaf, tidak dapat menghasilkan jawaban.';
@@ -198,7 +201,7 @@ Format output: Gunakan markdown Discord yang bersih (**bold**, *italic*, \`code\
                     : undefined,
                 },
                 footer: {
-                  text: '⚡ Server Architect • Powered by Google Gemini 3.7 Flash',
+                  text: '⚡ Server Architect • Created by Mang Pio 😎 • Gemini 3.7 Flash',
                 },
                 timestamp: new Date().toISOString(),
               },
@@ -217,9 +220,9 @@ Format output: Gunakan markdown Discord yang bersih (**bold**, *italic*, \`code\
     }
 
     // ----------------------------------------------------
-    // Command: /setup-server (Auto Architecture for The Boomers)
+    // Command: /tb-setup-server or /setup-server (Auto Architecture)
     // ----------------------------------------------------
-    if (commandName === 'setup-server') {
+    if (commandName === 'tb-setup-server' || commandName === 'setup-server') {
       if (!isAdmin) {
         return res.status(200).json({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
@@ -324,14 +327,14 @@ Format output: Gunakan markdown Discord yang bersih (**bold**, *italic*, \`code\
     }
 
     // ----------------------------------------------------
-    // Command: /setup-roles (Auto Role Hierarchy)
+    // Command: /tb-setup-roles or /setup-roles (Auto Role Hierarchy)
     // ----------------------------------------------------
-    if (commandName === 'setup-roles') {
+    if (commandName === 'tb-setup-roles' || commandName === 'setup-roles') {
       if (!isAdmin) {
         return res.status(200).json({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
-            content: '❌ **Akses Ditolak**: Perintah `/setup-roles` hanya dapat dijalankan oleh **Administrator**.',
+            content: '❌ **Akses Ditolak**: Perintah `/tb-setup-roles` hanya dapat dijalankan oleh **Administrator**.',
             flags: 64,
           },
         });
@@ -376,7 +379,7 @@ Format output: Gunakan markdown Discord yang bersih (**bold**, *italic*, \`code\
                   roleResults.map((r, i) => `${i + 1}. ${r}`).join('\n'),
                 color: 0xffd700, // Gold
                 footer: {
-                  text: 'Server Architect • Role Management Module',
+                  text: 'Server Architect • Built by Mang Pio 😎 • The Boomers',
                 },
                 timestamp: new Date().toISOString(),
               },
@@ -393,9 +396,9 @@ Format output: Gunakan markdown Discord yang bersih (**bold**, *italic*, \`code\
     }
 
     // ----------------------------------------------------
-    // Command: /bot-guide (Companion Bots Recommendations)
+    // Command: /tb-bot-guide or /bot-guide (Companion Bots)
     // ----------------------------------------------------
-    if (commandName === 'bot-guide') {
+    if (commandName === 'tb-bot-guide' || commandName === 'bot-guide') {
       const guideEmbeds = BOT_GUIDES.map((b) => ({
         title: `🤖 ${b.name}`,
         description: `**${b.tagline}**\n${b.purpose}\n\n**Fitur Unggulan:**\n${b.features.map((f) => `• ${f}`).join('\n')}\n\n**Channel Rekomendasi:** \`${b.recommendedChannel}\`\n**Contoh Command:** \`${b.setupCommands.join('`, `')}\`\n\n[🔗 Klik di sini untuk Invite ${b.name}](${b.inviteUrl})`,
@@ -412,9 +415,9 @@ Format output: Gunakan markdown Discord yang bersih (**bold**, *italic*, \`code\
     }
 
     // ----------------------------------------------------
-    // Command: /server-status
+    // Command: /tb-server-status or /server-status
     // ----------------------------------------------------
-    if (commandName === 'server-status') {
+    if (commandName === 'tb-server-status' || commandName === 'server-status') {
       try {
         let guildData: any = null;
         if (botToken && guildId) {
@@ -442,8 +445,8 @@ Format output: Gunakan markdown Discord yang bersih (**bold**, *italic*, \`code\
                     inline: true,
                   },
                   {
-                    name: '🛡️ Level Verifikasi',
-                    value: `Level ${guildData?.verification_level || 'Default'}`,
+                    name: '👑 Arsitek / Creator',
+                    value: 'Mang Pio 😎',
                     inline: true,
                   },
                   {
@@ -457,7 +460,7 @@ Format output: Gunakan markdown Discord yang bersih (**bold**, *italic*, \`code\
                     inline: true,
                   },
                 ],
-                footer: { text: 'Server Architect Diagnostic Engine' },
+                footer: { text: 'Server Architect • Created by Mang Pio 😎' },
                 timestamp: new Date().toISOString(),
               },
             ],
@@ -474,9 +477,9 @@ Format output: Gunakan markdown Discord yang bersih (**bold**, *italic*, \`code\
     }
 
     // ----------------------------------------------------
-    // Command: /clean-server
+    // Command: /tb-clean-server or /clean-server
     // ----------------------------------------------------
-    if (commandName === 'clean-server') {
+    if (commandName === 'tb-clean-server' || commandName === 'clean-server') {
       return res.status(200).json({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {

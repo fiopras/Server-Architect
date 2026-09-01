@@ -189,45 +189,45 @@ export const BOT_GUIDES: BotGuideItem[] = [
 
 export const SLASH_COMMANDS: SlashCommandDefinition[] = [
   {
-    name: 'ping',
-    description: '🏓 Cek latensi dan status Server Architect bot.',
+    name: 'tb-ping',
+    description: '🏓 [The Boomers] Cek latensi dan status Server Architect bot.',
   },
   {
-    name: 'setup-server',
-    description: '⚡ [Admin] Buat otomatis struktur kategori & channel server The Boomers.',
-    default_member_permissions: '8', // ADMINISTRATOR
-    dm_permission: false,
-  },
-  {
-    name: 'ask',
-    description: '🧠 Tanya apa saja ke Gemini AI super cerdas langsung di Discord!',
+    name: 'tb-ask',
+    description: '🧠 [The Boomers] Tanya apa saja ke Gemini AI buatan Mang Pio 😎',
     options: [
       {
         name: 'prompt',
-        description: 'Pertanyaan, instruksi, atau ide yang ingin ditanyakan ke AI',
+        description: 'Pertanyaan, instruksi, atau obrolan untuk AI',
         type: 3, // STRING
         required: true,
       },
     ],
   },
   {
-    name: 'setup-roles',
-    description: '👑 [Admin] Buat hierarki roles resmi The Boomers (Owner, Admin, Mod, Gamer, Member).',
+    name: 'tb-setup-server',
+    description: '⚡ [The Boomers - Admin] Buat otomatis struktur channel & kategori server.',
     default_member_permissions: '8', // ADMINISTRATOR
     dm_permission: false,
   },
   {
-    name: 'clean-server',
-    description: '🧹 [Admin] Audit atau rapikan channel dan kategori server yang berantakan.',
-    default_member_permissions: '8',
+    name: 'tb-setup-roles',
+    description: '👑 [The Boomers - Admin] Buat hierarki roles resmi The Boomers.',
+    default_member_permissions: '8', // ADMINISTRATOR
     dm_permission: false,
   },
   {
-    name: 'server-status',
-    description: '📊 Tampilkan status kesehatan server, daftar channel, roles, dan latency bot.',
+    name: 'tb-server-status',
+    description: '📊 [The Boomers] Tampilkan statistik & kesehatan server The Boomers.',
   },
   {
-    name: 'bot-guide',
-    description: '🤖 Rekomendasi bot pendukung (Musik, Ticket, Moderasi) dengan 1-click invite link.',
+    name: 'tb-bot-guide',
+    description: '🤖 [The Boomers] Rekomendasi bot musik, ticket & proteksi dengan link invite.',
+  },
+  {
+    name: 'tb-clean-server',
+    description: '🧹 [The Boomers - Admin] Audit atau rapikan channel server yang kosong.',
+    default_member_permissions: '8',
+    dm_permission: false,
   },
 ];
