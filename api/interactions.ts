@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import nacl from 'tweetnacl';
+import { verifyKey } from 'discord-interactions';
 import { GoogleGenAI } from '@google/genai';
 import { BOOMERS_SERVER_TEMPLATE, BOOMERS_ROLES_TEMPLATE, BOT_GUIDES } from '../src/data/discordTemplates.js';
 
@@ -24,22 +24,6 @@ const InteractionResponseType = {
 const DISCORD_API_BASE = 'https://discord.com/api/v10';
 
 /**
- * Verify Discord ed25519 request signature
- */
-function verifySignature(rawBody: string, signature?: string, timestamp?: string, publicKey?: string): boolean {
-  if (!signature || !timestamp || !publicKey) return false;
-  try {
-    return nacl.sign.detached.verify(
-      Buffer.from(timestamp + rawBody),
-      Buffer.from(signature, 'hex'),
-      Buffer.from(publicKey, 'hex')
-    );
-  } catch (e) {
-    return false;
-  }
-}
-
-/**
  * Helper to update deferred interaction response via Discord Webhook
  */
 async function editOriginalInteractionResponse(applicationId: string, token: string, body: any) {
@@ -48,6 +32,29 @@ async function editOriginalInteractionResponse(applicationId: string, token: str
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+  });
+}
+
+/**
+ * Helper to extract raw body buffer from express/vercel request
+ */
+async function getRawBody(req: Request): Promise<Buffer> {
+  if (Buffer.isBuffer(req.body)) {
+    return req.body;
+  }
+  if (typeof req.body === 'string') {
+    return Buffer.from(req.body, 'utf-8');
+  }
+  if (typeof req.body === 'object' && req.body !== null) {
+    return Buffer.from(JSON.stringify(req.body), 'utf-8');
+  }
+  
+  // Fallback: Read stream if body parser was not applied
+  return new Promise<Buffer>((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk: any) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
   });
 }
 
@@ -67,34 +74,37 @@ export default async function handler(req: Request, res: Response) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const signature = req.headers['x-signature-ed25519'] as string | undefined;
-  const timestamp = req.headers['x-signature-timestamp'] as string | undefined;
+  const signature = (req.headers['x-signature-ed25519'] || req.headers['X-Signature-Ed25519']) as string | undefined;
+  const timestamp = (req.headers['x-signature-timestamp'] || req.headers['X-Signature-Timestamp']) as string | undefined;
   const publicKey = process.env.DISCORD_PUBLIC_KEY;
   const botToken = process.env.DISCORD_TOKEN;
   const applicationId = process.env.DISCORD_APPLICATION_ID;
 
-  // Handle raw body string for verification
-  let rawBody = '';
-  if (typeof req.body === 'string') {
-    rawBody = req.body;
-  } else if (Buffer.isBuffer(req.body)) {
-    rawBody = req.body.toString('utf8');
-  } else {
-    rawBody = JSON.stringify(req.body);
-  }
+  const rawBodyBuffer = await getRawBody(req);
 
   // Security Check: Discord signature validation
   if (publicKey) {
-    const isVerified = verifySignature(rawBody, signature, timestamp, publicKey);
+    if (!signature || !timestamp) {
+      console.warn('⚠️ [Discord Security] Missing signature or timestamp headers.');
+      return res.status(401).send('Bad request signature');
+    }
+
+    const isVerified = verifyKey(rawBodyBuffer, signature, timestamp, publicKey);
     if (!isVerified) {
       console.warn('⚠️ [Discord Security] Invalid signature rejected.');
       return res.status(401).send('Bad request signature');
     }
   } else {
-    console.warn('⚠️ DISCORD_PUBLIC_KEY not set in environment. Skipping verification.');
+    console.warn('⚠️ DISCORD_PUBLIC_KEY not set in environment.');
   }
 
-  const interaction = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+  let interaction: any;
+  try {
+    const rawBodyString = rawBodyBuffer.toString('utf-8');
+    interaction = rawBodyString ? JSON.parse(rawBodyString) : req.body;
+  } catch (err) {
+    interaction = req.body;
+  }
 
   // 1. Discord PING Verification (Type 1)
   if (interaction.type === InteractionType.PING) {
