@@ -132,17 +132,7 @@ export default async function handler(req: Request, res: Response) {
       return res.status(200).json({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
-          embeds: [
-            {
-              title: '🏓 Pong! Server Architect Aktif',
-              description: `🟢 **Status Bot**: Online (Vercel Serverless)\n⚡ **Estimasi Latensi**: \`~${latency}ms\`\n🧠 **AI Engine**: Google Gemini 3.7 Flash\n👑 **Creator / Mastermind**: **Mang Pio 😎**\n🏛️ **Komunitas**: The Boomers`,
-              color: 0x57f287, // Discord Green
-              footer: {
-                text: 'Server Architect • Built by Mang Pio 😎 • Powered by Google Gemini',
-              },
-              timestamp: new Date().toISOString(),
-            },
-          ],
+          content: `🏓 **Pong!** (\`${latency}ms\`)\n🟢 Server Architect aktif dan siap membantu komunitas **The Boomers**!\n👑 Dibuat oleh **Mang Pio 😎** & ditenagai oleh **Google Gemini AI**.`,
         },
       });
     }
@@ -185,7 +175,7 @@ IDENTITAS & PENCIPTA:
 - Jika ada yang bertanya siapa yang buat kamu / penciptamu, sebutkan selalu **Mang Pio 😎** dengan bangga dan santai!
 - Karakter: Cerdas, ramah, solutif, gaul tapi sopan, responsif, fasih berbahasa Indonesia dan Inggris.
 - Tugas: Membantu member (${user?.global_name || user?.username || 'Member'}), menjawab pertanyaan gaming/coding/setup, dan meramaikan The Boomers.
-- Format: Gunakan markdown Discord yang rapi (**bold**, *italic*, \`code\`, bullet point). Batasi panjang di bawah 1900 karakter.`;
+- Format: Gunakan format teks chat Discord yang rapi (**bold**, *italic*, \`code\`, bullet point). Batasi panjang di bawah 1900 karakter.`;
 
           // Multi-model fallback list in case one encounters 503 high demand
           const candidateModels = ['gemini-3.7-flash', 'gemini-2.5-flash', 'gemini-flash-latest', 'gemini-3.1-pro-preview'];
@@ -226,23 +216,7 @@ IDENTITAS & PENCIPTA:
         return res.status(200).json({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
-            embeds: [
-              {
-                title: `🧠 Gemini AI: "${prompt.length > 50 ? prompt.substring(0, 47) + '...' : prompt}"`,
-                description: aiText,
-                color: 0x4285f4, // Google Blue
-                author: {
-                  name: `Ditanyakan oleh ${user?.global_name || user?.username || 'Member'}`,
-                  icon_url: user?.avatar
-                    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
-                    : undefined,
-                },
-                footer: {
-                  text: '⚡ Server Architect • Created by Mang Pio 😎 • Powered by Gemini',
-                },
-                timestamp: new Date().toISOString(),
-              },
-            ],
+            content: aiText,
           },
         });
       } catch (err: any) {
@@ -264,7 +238,7 @@ IDENTITAS & PENCIPTA:
         return res.status(200).json({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
-            content: '❌ **Akses Ditolak**: Perintah `/setup-server` hanya dapat dijalankan oleh **Administrator** atau Pemilik Server The Boomers.',
+            content: '❌ **Akses Ditolak**: Perintah `/tb-setup-server` hanya dapat dijalankan oleh **Administrator** atau Pemilik Server The Boomers.',
             flags: 64, // Ephemeral
           },
         });
@@ -337,20 +311,10 @@ IDENTITAS & PENCIPTA:
           }
 
           await editOriginalInteractionResponse(appId, interactionToken, {
-            embeds: [
-              {
-                title: '🎉 Arsitektur Server "The Boomers" Sukses!',
-                description:
-                  'Semua kategori dan channel resmi telah berhasil dibangun oleh **Server Architect**.\n\n' +
-                  results.join('\n\n') +
-                  '\n\n💡 *Tips: Gunakan `/setup-roles` untuk membuat hierarki role otomatis!*',
-                color: 0x57f287, // Discord Green
-                footer: {
-                  text: 'Server Architect • The Boomers Community Edition',
-                },
-                timestamp: new Date().toISOString(),
-              },
-            ],
+            content:
+              `⚡ **Arsitektur Server "The Boomers" Berhasil Dibuat!**\n\n` +
+              results.join('\n') +
+              `\n\n💡 *Gunakan \`/tb-setup-roles\` untuk melengkapi hierarki role! (Created by Mang Pio 😎)*`,
           });
         } catch (err: any) {
           console.error('Error executing /setup-server:', err);
@@ -408,19 +372,11 @@ IDENTITAS & PENCIPTA:
           }
 
           await editOriginalInteractionResponse(appId, interactionToken, {
-            embeds: [
-              {
-                title: '👑 Hierarki Roles "The Boomers" Berhasil Dibuat!',
-                description:
-                  'Role berikut telah ditambahkan ke server dengan warna dan perizinan optimal:\n\n' +
-                  roleResults.map((r, i) => `${i + 1}. ${r}`).join('\n'),
-                color: 0xffd700, // Gold
-                footer: {
-                  text: 'Server Architect • Built by Mang Pio 😎 • The Boomers',
-                },
-                timestamp: new Date().toISOString(),
-              },
-            ],
+            content:
+              `👑 **Hierarki Roles "The Boomers" Berhasil Dibuat!**\n\n` +
+              `Role berikut telah ditambahkan ke server:\n` +
+              roleResults.map((r, i) => `${i + 1}. ${r}`).join('\n') +
+              `\n\n*(Dibuat oleh Server Architect • Mang Pio 😎)*`,
           });
         } catch (err: any) {
           await editOriginalInteractionResponse(appId, interactionToken, {
@@ -436,17 +392,18 @@ IDENTITAS & PENCIPTA:
     // Command: /tb-bot-guide or /bot-guide (Companion Bots)
     // ----------------------------------------------------
     if (commandName === 'tb-bot-guide' || commandName === 'bot-guide') {
-      const guideEmbeds = BOT_GUIDES.map((b) => ({
-        title: `🤖 ${b.name}`,
-        description: `**${b.tagline}**\n${b.purpose}\n\n**Fitur Unggulan:**\n${b.features.map((f) => `• ${f}`).join('\n')}\n\n**Channel Rekomendasi:** \`${b.recommendedChannel}\`\n**Contoh Command:** \`${b.setupCommands.join('`, `')}\`\n\n[🔗 Klik di sini untuk Invite ${b.name}](${b.inviteUrl})`,
-        color: 0x5865f2, // Blurple
-      }));
+      const guideText = BOT_GUIDES.map(
+        (b, idx) =>
+          `**${idx + 1}. 🤖 ${b.name}** — *${b.tagline}*\n` +
+          `${b.purpose}\n` +
+          `• **Channel Rekomendasi**: \`${b.recommendedChannel}\`\n` +
+          `• **Invite Link**: [Klik untuk Invite ${b.name}](${b.inviteUrl})\n`
+      ).join('\n');
 
       return res.status(200).json({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
-          content: 'Berikut adalah daftar bot pendukung resmi yang direkomendasikan untuk server **The Boomers**:',
-          embeds: guideEmbeds,
+          content: `🤖 **Rekomendasi Bot Pendukung The Boomers:**\n\n${guideText}`,
         },
       });
     }
@@ -467,40 +424,13 @@ IDENTITAS & PENCIPTA:
         return res.status(200).json({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
-            embeds: [
-              {
-                title: `📊 Status Server: ${guildData?.name || 'The Boomers'}`,
-                description: `Informasi terkini mengenai kondisi dan arsitektur server.`,
-                color: 0x3ba55d,
-                thumbnail: guildData?.icon
-                  ? { url: `https://cdn.discordapp.com/icons/${guildId}/${guildData.icon}.png` }
-                  : undefined,
-                fields: [
-                  {
-                    name: '👥 Total Anggota',
-                    value: `${guildData?.approximate_member_count || 'N/A'} Members (${guildData?.approximate_presence_count || 'N/A'} Online)`,
-                    inline: true,
-                  },
-                  {
-                    name: '👑 Arsitek / Creator',
-                    value: 'Mang Pio 😎',
-                    inline: true,
-                  },
-                  {
-                    name: '⚡ Bot Status',
-                    value: '🟢 Online (Vercel Serverless Function)',
-                    inline: true,
-                  },
-                  {
-                    name: '🧠 AI Engine',
-                    value: 'Google Gemini 3.7 Flash (@google/genai)',
-                    inline: true,
-                  },
-                ],
-                footer: { text: 'Server Architect • Created by Mang Pio 😎' },
-                timestamp: new Date().toISOString(),
-              },
-            ],
+            content:
+              `📊 **Status Server: ${guildData?.name || 'The Boomers'}**\n\n` +
+              `• **Total Anggota**: \`${guildData?.approximate_member_count || 'Aktif'}\` member (\`${guildData?.approximate_presence_count || 'Aktif'}\` online)\n` +
+              `• **Server ID**: \`${guildId}\`\n` +
+              `• **Creator Bot**: **Mang Pio 😎**\n` +
+              `• **AI Engine**: Google Gemini AI\n` +
+              `• **Status Bot**: 🟢 Online & Siap Pakai!`,
           },
         });
       } catch (err: any) {
