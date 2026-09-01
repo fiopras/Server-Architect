@@ -1,0 +1,6 @@
+{
+  "name": "Server Architect - Discord Bot",
+  "description": "Serverless Discord Bot & AI Server Architect for The Boomers with Gemini AI integration, auto server setup, and Vercel deployment.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
