@@ -152,13 +152,26 @@ export default async function handler(req: Request, res: Response) {
     // ----------------------------------------------------
     if (commandName === 'tb-ask' || commandName === 'ask') {
       const promptOption = interaction.data.options?.find((opt: any) => opt.name === 'prompt');
-      const prompt = promptOption?.value || 'Halo!';
+      const prompt = (promptOption?.value || 'Halo!').trim();
+      const lowerPrompt = prompt.toLowerCase();
+
+      // Quick Creator Check: Instant response if asking about creator
+      const isAskingCreator = 
+        lowerPrompt.includes('siapa yang buat') || 
+        lowerPrompt.includes('siapa pencipta') || 
+        lowerPrompt.includes('siapa develop') ||
+        lowerPrompt.includes('siapa pembuat') ||
+        lowerPrompt.includes('lu siapa') ||
+        lowerPrompt.includes('kamu siapa') ||
+        lowerPrompt.includes('mang pio');
 
       try {
         const geminiApiKey = process.env.GEMINI_API_KEY;
         let aiText = '';
 
-        if (!geminiApiKey) {
+        if (isAskingCreator) {
+          aiText = `Halo bro! 😎\n\nPerkenalkan, aku adalah **Server Architect**, asisten AI resmi khusus komunitas **The Boomers**!\n\n👑 **Pencipta & Mastermind**: Aku dirancang, dikembangkan, dan dibesarkan oleh **Mang Pio 😎** sang arsitek server The Boomers!\n\n🧠 **Teknologi**: Ditenagai oleh **Google Gemini AI** dengan arsitektur serverless modern Vercel. Ada yang bisa aku bantu untuk server ini? 🚀`;
+        } else if (!geminiApiKey) {
           aiText = '⚠️ **Konfigurasi Kurang**: `GEMINI_API_KEY` belum disetting di environment variable Vercel.';
         } else {
           const ai = new GoogleGenAI({
@@ -166,20 +179,44 @@ export default async function handler(req: Request, res: Response) {
             httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
           });
 
-          const response = await ai.models.generateContent({
-            model: 'gemini-3.7-flash',
-            contents: prompt,
-            config: {
-              systemInstruction: `Kamu adalah "Server Architect", asisten AI resmi berteknologi Google Gemini 3.7 Flash untuk komunitas Discord "The Boomers".
-IDENTITAS PENTING & PENCIPTA:
-- Kamu dibuat, dirancang, dan dikembangkan secara khusus oleh **Mang Pio 😎** (Sang Founder & Mastermind server Discord The Boomers).
-- Jika ada yang bertanya "siapa yang buat kamu?", "siapa penciptamu?", "siapa developermu?", "lu siapa yang buat?", atau sejenisnya, kamu WAJIB menjawab dengan bangga, santai, dan penuh respek bahwa pencipta dan developermu adalah **Mang Pio 😎**!
+          const systemInstruction = `Kamu adalah "Server Architect", asisten AI resmi berteknologi Google Gemini untuk komunitas Discord "The Boomers".
+IDENTITAS & PENCIPTA:
+- Kamu dibuat, dirancang, dan dikembangkan secara khusus oleh **Mang Pio 😎** (Sang Mastermind & Founder server Discord The Boomers).
+- Jika ada yang bertanya siapa yang buat kamu / penciptamu, sebutkan selalu **Mang Pio 😎** dengan bangga dan santai!
 - Karakter: Cerdas, ramah, solutif, gaul tapi sopan, responsif, fasih berbahasa Indonesia dan Inggris.
-- Tugas: Membantu member (${user?.global_name || user?.username || 'Member'}), memberikan ide gaming/coding/server setup, dan meramaikan komunitas The Boomers.
-- Format: Gunakan markdown Discord yang bersih (**bold**, *italic*, \`code\`, bullet point). Batasi panjang jawaban di bawah 1900 karakter.`,
-            },
-          });
-          aiText = response.text || 'Maaf, tidak dapat menghasilkan jawaban.';
+- Tugas: Membantu member (${user?.global_name || user?.username || 'Member'}), menjawab pertanyaan gaming/coding/setup, dan meramaikan The Boomers.
+- Format: Gunakan markdown Discord yang rapi (**bold**, *italic*, \`code\`, bullet point). Batasi panjang di bawah 1900 karakter.`;
+
+          // Multi-model fallback list in case one encounters 503 high demand
+          const candidateModels = ['gemini-3.7-flash', 'gemini-2.5-flash', 'gemini-flash-latest', 'gemini-3.1-pro-preview'];
+          let lastError: any = null;
+
+          for (const modelName of candidateModels) {
+            try {
+              const response = await ai.models.generateContent({
+                model: modelName,
+                contents: prompt,
+                config: {
+                  systemInstruction,
+                },
+              });
+              if (response && response.text) {
+                aiText = response.text;
+                break; // Successfully got response
+              }
+            } catch (modelErr: any) {
+              lastError = modelErr;
+              console.warn(`[Gemini API] Model ${modelName} failed, trying next fallback...`, modelErr?.message || modelErr);
+            }
+          }
+
+          if (!aiText) {
+            if (lastError?.message?.includes('503') || lastError?.status === 'UNAVAILABLE' || lastError?.message?.includes('high demand')) {
+              aiText = `Halo **${user?.global_name || user?.username || 'Member'}**! Server Google Gemini saat ini sedang mengalami lonjakan lalu lintas global sesaat (High Demand 503).\n\nTetapi jangan khawatir, aku **Server Architect** buatan **Mang Pio 😎** siap membantu kembali dalam beberapa detik! Silakan ulangi pertanyaanmu sekarang ya! 🚀`;
+            } else {
+              aiText = `Maaf, terjadi kendala saat memproses permintaan: ${lastError?.message || 'Silakan coba lagi sebentar lagi.'}`;
+            }
+          }
         }
 
         if (aiText.length > 1950) {
@@ -201,7 +238,7 @@ IDENTITAS PENTING & PENCIPTA:
                     : undefined,
                 },
                 footer: {
-                  text: '⚡ Server Architect • Created by Mang Pio 😎 • Gemini 3.7 Flash',
+                  text: '⚡ Server Architect • Created by Mang Pio 😎 • Powered by Gemini',
                 },
                 timestamp: new Date().toISOString(),
               },
@@ -213,7 +250,7 @@ IDENTITAS PENTING & PENCIPTA:
         return res.status(200).json({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
-            content: `❌ Gagal menghubungi Gemini AI: ${err?.message || 'Unknown error'}`,
+            content: `❌ Halo, ada kendala sementara di API: ${err?.message || 'Silakan coba lagi'}`,
           },
         });
       }
