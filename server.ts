@@ -11,6 +11,7 @@ import {
   fetchGuildDetails,
   fetchSlashCommands,
 } from './src/services/discordApi.js';
+import { startGatewayBot } from './src/gatewayBot.js';
 
 dotenv.config();
 
@@ -190,6 +191,12 @@ async function startServer() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server Architect running on http://0.0.0.0:${PORT}`);
+    // Start Discord WebSocket Gateway client for Online Status & Prefix Commands
+    try {
+      startGatewayBot();
+    } catch (err: any) {
+      console.warn('[GatewayBot] Could not start gateway bot:', err?.message);
+    }
   });
 }
 
